@@ -31,21 +31,18 @@ h = seq(0.03, by = (0.15-0.001)/(n_h-1), length = n_h)
 
 
 # compute MASE, variance and bias^2 for given data sample and a ran_he of bandwidths
-L  = matrix(0, n_h, 1)
-L_CV = L
-L_GCV = L
-L_emp = L
-bias = L
-var = L
+L_CV = matrix(0, n_h, 1)
+L_GCV = L_CV
+L_emp = L_CV
+bias = L_CV
+var = L_CV
 
 for (k in 1:n_h) {
   # Nadaraya–Watson with Gaussian kernel 
   fh = ksmooth(x, y, bandwidth = h[k], kernel = "normal", x.points = x)$y
-  # generalization error
-  L[k] = sum((f-fh)^2)/n
-  # true bias and variance
-  bias[k] = sum(f-fh)/n 
-  var[k] = sum((fh-bias[k])^2)/n
+  # bias and variance
+  bias[k] = sum(y-fh)/n 
+  var[k] = sum((fh-sum(fh)/n)^2)/n
   # empirical error
   L_emp[k] = sum((y-fh)^2)/n 
   # LOO CV
@@ -53,29 +50,21 @@ for (k in 1:n_h) {
                                         kernel = "normal", x.points = x[i])$y)
   L_CV[k] = sum((y-fh_cv)^2)/n 
   # GCV
-  tr = 0
-  for (i in 1:n) {
-    d = 0
-    for (j in 1:n) 
-      d = d + dnorm((x[i]-x[j])/(h[k]))
-    tr = tr + 1/d
-  }
-  tr = dnorm(0) * tr
-  L_GCV[k] = 1/(1-tr/n)^2 * L_emp[k]
+  tr_est = dnorm(0)/h[k]
+  L_GCV[k] = 1/(1-tr_est/n)^2 * L_emp[k]
 }
 
 
 # plot
 png("errors.png", width = 900, height = 900, bg = "transparent")
 plot(h, L_CV, type = "l", lwd = 3, lty = 2, col = "black", xlab = "Bandwidth h", 
-     ylab = "", cex.lab = 2, cex.axis = 2, ylim = c(0, max(L_CV)))
+     ylab = "", cex.lab = 2, cex.axis = 2, ylim = c(min(L_emp), max(L_CV)))
 title("Choosing optimal bandwidth", cex.main = 2)
-lines(h, L, lwd = 3, col = "red3")
 lines(h, L_emp, lwd = 3, lty = 1, col = "blue3")
 abline(h = sigma^2, col = "green", lwd = 1, lty = 1)
-lines(h, L_GCV, lwd = 3, lty = 2, col = "blue3")
-legend("bottomright", c("L", "L_emp", "L_CV", "L_GCV", "sigma^2"), lty = c(1, 1, 2, 2, 1), 
-       lwd = c(3, 3, 3, 3, 1), col = c("red3", "blue3", "black", "blue3", "green"), cex = 1.5)
+lines(h, L_GCV, lwd = 3, lty = 2, col = "red3")
+legend("bottomright", c("L_emp", "L_CV", "L_GCV", "sigma^2"), lty = c(1, 2, 2, 1), 
+       lwd = c(3, 3, 3, 1), col = c("blue3", "black", "red3", "green"), cex = 1.5)
 dev.off()
 
 png("bv.png", width = 900, height = 900, bg = "transparent")
@@ -112,3 +101,9 @@ title("Simulated Data Estimated with GCV", cex.main = 2)
 points(x, y, pch = 19, col = "red3", cex = 0.7)
 lines(nw_opt_gcv, lwd = 3)
 dev.off()
+
+
+# test the difference between the built-in and manual NW
+
+fh = ksmooth(x, y, bandwidth = h[k], kernel = "normal", x.points = x)$y
+# manual NW
