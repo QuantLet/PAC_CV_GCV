@@ -1,12 +1,10 @@
-# clear variables and close windows
+# clear variables
 rm(list = ls(all = TRUE))
-graphics.off()
 
 # install and load packages
 libraries = c("locpol", "dplyr")
 lapply(libraries, function(x) if (!(x %in% installed.packages())) {
-  install.packages(x)
-})
+  install.packages(x) })
 lapply(libraries, library, quietly = TRUE, character.only = TRUE)
 
 
@@ -27,10 +25,18 @@ f = xyf[, 3]
 
 # bandwidth grid
 n_h = 25
-h = seq(0.03, by = (0.15-0.001)/(n_h-1), length = n_h)
+h = seq(0.03, by = (0.15-0.03)/(n_h-1), length = n_h)
 
-
-# compute MASE, variance and bias^2 for given data sample and a ran_he of bandwidths
+# Nadaraya-Watson estimator
+fNW <- function(x, X, Y, h, K = dnorm) {
+  Kx <- sapply(X, function(Xi) K((x - Xi) / h) / h)
+  if (is.vector(Kx)) Kx = matrix(Kx, nrow = 1)
+  W <- Kx / rowSums(Kx) 
+  drop(W %*% Y)
+}  
+  
+# compute empirical, LOO CV and GCV errors, variance and bias^2 
+# for given data sample and a range of bandwidths
 L_CV = matrix(0, n_h, 1)
 L_GCV = L_CV
 L_emp = L_CV
@@ -39,15 +45,15 @@ var = L_CV
 
 for (k in 1:n_h) {
   # Nadaraya–Watson with Gaussian kernel 
-  fh = ksmooth(x, y, bandwidth = h[k], kernel = "normal", x.points = x)$y
+  fh = fNW(x = x, X = x, Y = y, h = h[k])
   # bias and variance
   bias[k] = sum(y-fh)/n 
   var[k] = sum((fh-sum(fh)/n)^2)/n
   # empirical error
   L_emp[k] = sum((y-fh)^2)/n 
   # LOO CV
-  fh_cv = sapply(1:n, function(i) ksmooth(x[-i], y[-i], bandwidth = h[k], 
-                                        kernel = "normal", x.points = x[i])$y)
+  fh_cv = sapply(1:n, function(i) 
+    fNW(x = x[i], X = x[-i], Y = y[-i], h = h[k]))
   L_CV[k] = sum((y-fh_cv)^2)/n 
   # GCV
   tr_est = dnorm(0)/h[k]
@@ -101,9 +107,3 @@ title("Simulated Data Estimated with GCV", cex.main = 2)
 points(x, y, pch = 19, col = "red3", cex = 0.7)
 lines(nw_opt_gcv, lwd = 3)
 dev.off()
-
-
-# test the difference between the built-in and manual NW
-
-fh = ksmooth(x, y, bandwidth = h[k], kernel = "normal", x.points = x)$y
-# manual NW
