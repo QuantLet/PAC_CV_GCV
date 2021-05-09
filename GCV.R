@@ -11,13 +11,20 @@ lapply(libraries, library, quietly = TRUE, character.only = TRUE)
 # specify the model
 set.seed(20130318)
 n = 100  # number of observations
-x = runif(n)  # uniform sample
-sigma = sqrt(0.1)
-eps = rnorm(n) * sigma  # error
-f = (sin(2*pi*(x^3)))^3 %>% unname() # true line
-y = f + eps
+n_MC = 1000 # number of Monte-Carlo iterations
 
-xyf = cbind(x, y, f)
+sim <- function() {
+  x = runif(n)  # uniform sample
+  sigma = sqrt(0.1)
+  eps = rnorm(n) * sigma  # error
+  f = (sin(2*pi*(x^3)))^3 %>% unname() # true line
+  y = f + eps
+  list(x = x, y = y, f = f)
+}  
+
+sim_one = sim()
+
+xyf = cbind(sim_one$x, sim_one$y, sim_one$f)
 xyf = xyf[order(xyf[, 1]), ]
 x = xyf[, 1] 
 y = xyf[, 2]
@@ -46,9 +53,17 @@ var = L_CV
 for (k in 1:n_h) {
   # Nadaraya–Watson with Gaussian kernel 
   fh = fNW(x = x, X = x, Y = y, h = h[k])
-  # bias and variance
-  bias[k] = sum(y-fh)/n 
-  var[k] = sum((fh-sum(fh)/n)^2)/n
+  # Monte-Carlo estimates of true bias and variance
+  biases = matrix(0, n_MC, 1)
+  vars = biases
+  for (i in 1:n_MC) {
+    sim_MC = sim()
+    fh_MC = fNW(x = sim_MC$x, X = sim_MC$x, Y = sim_MC$y, h = h[k])
+    biases[i] = sum(sim_MC$y-fh_MC)/n
+    vars[i] = sum((fh_MC-sum(fh_MC)/n)^2)/n
+    }
+  bias[k] = sum(biases)/n_MC 
+  var[k] = sum(vars)/n_MC
   # empirical error
   L_emp[k] = sum((y-fh)^2)/n 
   # LOO CV
