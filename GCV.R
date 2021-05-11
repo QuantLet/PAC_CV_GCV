@@ -9,26 +9,19 @@ lapply(libraries, library, quietly = TRUE, character.only = TRUE)
 
 
 # specify the model
-set.seed(20130318)
+set.seed(201053)
 n = 100  # number of observations
-n_MC = 1000 # number of Monte-Carlo iterations
+n_MC = 10 # number of Monte-Carlo iterations
+sigma2 = 0.3
+sigma = sqrt(sigma2) 
+x = runif(n) %>% sort() # uniform sample
+f = (sin(2*pi*(x^3)))^3 %>% unname() # true line
 
-sim <- function() {
-  x = runif(n)  # uniform sample
-  sigma = sqrt(0.1)
+y_sim <- function() {
   eps = rnorm(n) * sigma  # error
-  f = (sin(2*pi*(x^3)))^3 %>% unname() # true line
   y = f + eps
-  list(x = x, y = y, f = f)
+  return(y)
 }  
-
-sim_one = sim()
-
-xyf = cbind(sim_one$x, sim_one$y, sim_one$f)
-xyf = xyf[order(xyf[, 1]), ]
-x = xyf[, 1] 
-y = xyf[, 2]
-f = xyf[, 3]
 
 # bandwidth grid
 n_h = 25
@@ -47,33 +40,38 @@ fNW <- function(x, X, Y, h, K = dnorm) {
 L_CV = matrix(0, n_h, 1)
 L_GCV = L_CV
 L_emp = L_CV
-bias = L_CV
-var = L_CV
+bias_MC = L_CV
+m1_MC = L_CV
+m2_MC = L_CV
+
+y = y_sim()
 
 for (k in 1:n_h) {
   # Nadaraya–Watson with Gaussian kernel 
   fh = fNW(x = x, X = x, Y = y, h = h[k])
-  # Monte-Carlo estimates of true bias and variance
-  biases = matrix(0, n_MC, 1)
-  vars = biases
-  for (i in 1:n_MC) {
-    sim_MC = sim()
-    fh_MC = fNW(x = sim_MC$x, X = sim_MC$x, Y = sim_MC$y, h = h[k])
-    biases[i] = sum(sim_MC$y-fh_MC)/n
-    vars[i] = sum((fh_MC-sum(fh_MC)/n)^2)/n
-    }
-  bias[k] = sum(biases)/n_MC 
-  var[k] = sum(vars)/n_MC
   # empirical error
-  L_emp[k] = sum((y-fh)^2)/n 
+  L_emp[k] = mean((y - fh)^2) 
   # LOO CV
   fh_cv = sapply(1:n, function(i) 
     fNW(x = x[i], X = x[-i], Y = y[-i], h = h[k]))
-  L_CV[k] = sum((y-fh_cv)^2)/n 
+  L_CV[k] = mean((y - fh_cv)^2)
   # GCV
   tr_est = dnorm(0)/h[k]
-  L_GCV[k] = 1/(1-tr_est/n)^2 * L_emp[k]
+  L_GCV[k] = 1/(1 - tr_est/n)^2 * L_emp[k]
 }
+
+# Monte-Carlo estimates of true bias and variance
+for (j in 1:n_MC) {
+  y_MC = y_sim()
+  for (k in 1:n_h) {
+    fh_MC = fNW(x = x, X = x, Y = y_MC, h = h[k])
+    bias_MC[k] = bias_MC[k] + mean(fh_MC - f)
+    m1_MC[k] = m1_MC[k] + mean(fh_MC)
+    m2_MC[k] = m2_MC[k] + mean(fh_MC^2)
+  }
+}
+bias_MC = bias_MC/n_MC
+var_MC = m2_MC/n_MC - (m1_MC/n_MC)^2
 
 
 # plot
@@ -82,7 +80,7 @@ plot(h, L_CV, type = "l", lwd = 3, lty = 2, col = "black", xlab = "Bandwidth h",
      ylab = "", cex.lab = 2, cex.axis = 2, ylim = c(min(L_emp), max(L_CV)))
 title("Choosing optimal bandwidth", cex.main = 2)
 lines(h, L_emp, lwd = 3, lty = 1, col = "blue3")
-abline(h = sigma^2, col = "green", lwd = 1, lty = 1)
+abline(h = sigma2, col = "green", lwd = 1, lty = 1)
 lines(h, L_GCV, lwd = 3, lty = 2, col = "red3")
 legend("bottomright", c("L_emp", "L_CV", "L_GCV", "sigma^2"), lty = c(1, 2, 2, 1), 
        lwd = c(3, 3, 3, 1), col = c("blue3", "black", "red3", "green"), cex = 1.5)
@@ -90,11 +88,11 @@ dev.off()
 
 png("bv.png", width = 900, height = 900, bg = "transparent")
 par(mar = c(5, 4, 4, 4) + 0.3)
-plot(h, var, type = "l", lwd = 3, col = "red3", xlab = "Bandwidth h", ylab = "Variance", 
-     cex.lab = 2, cex.axis = 2, ylim = c(0, max(var)))
+plot(h, var_MC, type = "l", lwd = 3, col = "red3", xlab = "Bandwidth h", ylab = "Variance", 
+     cex.lab = 2, cex.axis = 2, ylim = c(0, max(var_MC)))
 par(new = TRUE)
-plot(h, bias^2, type = "l", lwd = 3, axes = FALSE, col = "blue3", ylab = "", xlab = "")
-axis(side = 4, at = pretty(range(bias^2)), cex.axis = 2)
+plot(h, bias_MC^2, type = "l", lwd = 3, axes = FALSE, col = "blue3", ylab = "", xlab = "")
+axis(side = 4, at = pretty(range(bias_MC^2)), cex.axis = 2)
 mtext("Bias^2", side = 4, line = 3, cex = 2)
 title("Bias-Variance Tradeoff", cex.main = 2)
 dev.off()
@@ -105,7 +103,7 @@ nw_opt_cv = ksmooth(x, y, kernel = "normal", bandwidth = hopt_cv)
 
 png("cv.png", width = 900, height = 900, bg = "transparent")
 plot(x, f, type = "l",col = "blue3", lwd = 3, ylab = "", 
-     xlab = "x", cex.lab = 2, cex.axis = 2, ylim = range(f))
+     xlab = "x", cex.lab = 2, cex.axis = 2, ylim = range(y))
 title("Simulated Data Estimated with CV", cex.main = 2)
 points(x, y, pch = 19, col = "red3", cex = 0.7)
 lines(nw_opt_cv, lwd = 3)
@@ -117,7 +115,7 @@ nw_opt_gcv = ksmooth(x, y, kernel = "normal", bandwidth = hopt_gcv)
 
 png("gcv.png", width = 900, height = 900, bg = "transparent")
 plot(x, f, type = "l", col = "blue3", lwd = 3, ylab = "", 
-     xlab = "x", cex.lab = 2, cex.axis = 2, ylim = range(f))
+     xlab = "x", cex.lab = 2, cex.axis = 2, ylim = range(y))
 title("Simulated Data Estimated with GCV", cex.main = 2)
 points(x, y, pch = 19, col = "red3", cex = 0.7)
 lines(nw_opt_gcv, lwd = 3)
