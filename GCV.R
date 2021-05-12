@@ -98,25 +98,25 @@ title("Bias-Variance Tradeoff", cex.main = 2)
 dev.off()
 
 # choose optimal h acc CV
-hopt_cv = h[which(L_CV == min(L_CV))]
-nw_opt_cv = ksmooth(x, y, kernel = "normal", bandwidth = hopt_cv)
+h_cv = h[which(L_CV == min(L_CV))]
+f_cv = fNW(x = x, X = x, Y = y, h = h_cv)
 
 png("cv.png", width = 900, height = 900, bg = "transparent")
 plot(x, f, type = "l",col = "blue3", lwd = 3, ylab = "", 
      xlab = "x", cex.lab = 2, cex.axis = 2, ylim = range(y))
 title("Simulated Data Estimated with CV", cex.main = 2)
 points(x, y, pch = 19, col = "red3", cex = 0.7)
-lines(nw_opt_cv, lwd = 3)
+lines(x, f_cv, lwd = 3)
 dev.off()
 
 # choose optimal h acc GCV
-hopt_gcv = h[which(L_GCV == min(L_GCV))]
-nw_opt_gcv = ksmooth(x, y, kernel = "normal", bandwidth = hopt_gcv)
+h_gcv = h[which(L_GCV == min(L_GCV))]
+f_gcv = fNW(x = x, X = x, Y = y, h = h_gcv)
 
 png("gcv.png", width = 900, height = 900, bg = "transparent")
 plot(x, f, type = "l", col = "blue3", lwd = 3, ylab = "", 
      xlab = "x", cex.lab = 2, cex.axis = 2, ylim = range(y))
 title("Simulated Data Estimated with GCV", cex.main = 2)
 points(x, y, pch = 19, col = "red3", cex = 0.7)
-lines(nw_opt_gcv, lwd = 3)
+lines(x, f_gcv, lwd = 3)
 dev.off()
