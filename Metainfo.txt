@@ -3,9 +3,9 @@ Name of Quantlet: PAC_CV_GCV
 
 Published in: Metis
 
-Description: 'Fitting the bandwidth of Nadaraya-Watson estimator to simulated data on an interval using cross-validation and generalised cross-validation'
+Description: 'Fitting the bandwidth of Nadaraya-Watson estimator to simulated data on an interval using cross-validation and generalised cross-validation in R and Python'
 
-Keywords: smoothing, Nadaraya-Watson, cross-validation, generalised cross-validation
+Keywords: smoothing, Nadaraya-Watson, cross-validation, generalised cross-validation, empirical error
 
 Author: Anna Shchekina, Lili Matic, Wolfgang Karl Härdle
 
