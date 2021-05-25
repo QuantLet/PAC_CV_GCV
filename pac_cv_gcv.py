@@ -4,9 +4,7 @@ import random as r
 from scipy.stats import norm
 import matplotlib.pyplot as plt
 
-
 # Data generation process
-
 
 # Fix some general setup variables
 
@@ -35,15 +33,12 @@ col_blue = 'b'
 col_red  = 'indianred'
 col_navy = 'navy'
 
-
 ## 1. Generate  X$\sim U [0,1]$
 
 x = sp.random.uniform(0,1,n)
 x.sort()
 
-
 ## 2. Generate $y_i = \sin^3(2\pi x_i^3) + \varepsilon_i,  i\in [1,n]$, where $\varepsilon_i \sim N(0,\sigma_\varepsilon^2)$ and $\sigma^2_\varepsilon = 0.3$
-
 
 # 2a) Generate $\varepsilon_i \sim N(0,\sigma_\varepsilon^2)$ with $\sigma^2_\varepsilon $ to be determined
 
@@ -52,9 +47,7 @@ x.sort()
 sigma = np.sqrt(sig2)
 eps = np.random.normal(0, sigma,  n)
 
-
 # 2b) Generate $y_i = \sin^3(2\pi x_i^3) + \varepsilon_i$ for $i\in 1:n$
-
 
 def f(x):
     return (np.sin(2*np.pi*(x**3)))**3
@@ -65,14 +58,11 @@ def gendata(f, sigma, n):
 f_x = f(x)
 y = gendata(f_x, sigma, n)
 
-
 ## Data plot
-
 
 fig, ax = plt.subplots(1, 1)
 ax.plot(x, y, 'o', color=col_red)
 ax.plot(x,f_x,'-g',color=col_blue, lw=3)
-
 
 # Kernel regression smoothing with NW kernel estimator
 
@@ -90,7 +80,6 @@ def nw_inner(t, x, y, h):
 def fh(ts, x, y, h):
     return [nw_inner(t, x ,y ,h) for t in ts]
 
-
 # trial bandwidth for Gaussian kernel, note that in terms of Uni (box car) kernel 
 # this has to be multiplied with 1.35/0.77, i.e. we for h=0.01 are averaging over the window (t - 0.0175, t + 0.0175)
 # LM change the NW smoother !!!! 
@@ -105,14 +94,11 @@ fig, ax = plt.subplots(1, 1)
 ax.plot(x, y, 'o', color= col_red)
 ax.plot(x,f_h,'-g',color= col_blue, lw=3)
 
-
 # Bias-variance decomposition
 
 # Estimation for some bandwidths e.g. $h \in [0.01, 0.02, \dots, 0.1]$
 
-
 h = list( np.linspace(0.01, 0.3, 25) )
-
 
 # Repeat data generation J times
 
@@ -123,7 +109,6 @@ variance = np.zeros( (n, len(h)) )
 CV = np.zeros( len(h) )
 CV_all = np.zeros( (J_cv, len(h)) )   # collects the CVs over simulations
 L_emp = np.zeros( (J_cv, len(h)) )    # collects the emp error over simulations
-
 
 #  Computation of bias
 
@@ -148,9 +133,7 @@ for i in range(len(h)):
 bias2 = bias**2
 Int_bias_h = np.sum(bias2, axis = 0)/n
 
-
 plt.plot(h, Int_bias_h, color=col_blue, lw = 3)
-
 
 r.seed(201053)
 for j in range(1,J):
@@ -166,9 +149,7 @@ variance = variance/J
 
 Int_var_h = np.sum(variance, axis = 0)/n 
 
-
 plt.plot(h, Int_var_h, color=col_red, lw = 3)
-
 
 # Plot bias-variance-tradeoff
 
@@ -190,9 +171,7 @@ plt.show()
 
 plt.plot(h, Int_bias_h + Int_var_h, color = col_navy, lw=3)
 
-
 ## Cross-validation
-
 
 r.seed(201053)      # fix seed to have bias and variance calculated on the same random set
 
@@ -215,9 +194,7 @@ for j in range(J_cv):
 # end J loop
 CV_mean = np.mean( CV_all, axis = 0 )
 
-
 plt.plot(h, CV_mean, lw = 3,  color = col_pink)
-
 
 r.seed(201053)
 
@@ -233,9 +210,7 @@ for j in range(J_cv):
 L_emp = L_emp/J_cv
 L_emp_mean = np.mean( L_emp, axis = 0 )
 
-
 ## Generalized Cross-validation
-
 
 inner_t = (norm.pdf(0)/h)/n      # tr( S(h)/n )
 
@@ -243,9 +218,7 @@ L_GCV = L_emp/( (1-inner_t)**2 )
 
 L_GCV_mean = np.mean( L_GCV, axis = 0 )
 
-
 plt.plot(h, sig2 + np.zeros( len(h) ), color=col_pink, lw=3)
 plt.plot(h, CV_mean,linestyle='dashdot', color=col_blue, lw=3)
 plt.plot(h, L_emp_mean, color= col_red, lw=3)
 plt.plot(h, L_GCV_mean, linestyle='dotted', color = 'green', lw=3)
-
