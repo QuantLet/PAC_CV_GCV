@@ -157,7 +157,6 @@ dev.off()
 
 ```
 
-
 ### Python Code
 ```python
 
