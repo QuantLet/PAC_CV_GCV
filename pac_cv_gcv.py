@@ -170,6 +170,7 @@ fig.tight_layout()
 plt.show()
 
 plt.plot(h, Int_bias_h + Int_var_h, color = col_navy, lw=3)
+plt.show()
 
 ## Cross-validation
 
@@ -217,6 +218,7 @@ inner_t = (norm.pdf(0)/h)/n      # tr( S(h)/n )
 L_GCV = L_emp/( (1-inner_t)**2 )
 
 L_GCV_mean = np.mean( L_GCV, axis = 0 )
+
 
 plt.plot(h, sig2 + np.zeros( len(h) ), color=col_pink, lw=3)
 plt.plot(h, CV_mean,linestyle='dashdot', color=col_blue, lw=3)
