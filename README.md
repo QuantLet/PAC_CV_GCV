@@ -162,15 +162,12 @@ dev.off()
 
 import numpy as np
 import scipy as sp
-import random as r
 from scipy.stats import norm
 import matplotlib.pyplot as plt
 
 # Data generation process
 
 # Fix some general setup variables
-
-r.seed(201053)
 
 # sample size n 
 
@@ -197,6 +194,7 @@ col_navy = 'navy'
 
 ## 1. Generate  X$\sim U [0,1]$
 
+sp.random.seed(201053)
 x = sp.random.uniform(0,1,n)
 x.sort()
 
@@ -207,6 +205,7 @@ x.sort()
 # Only for illustration - regenerated in next block!
 
 sigma = np.sqrt(sig2)
+np.random.seed(201053)
 eps = np.random.normal(0, sigma,  n)
 
 # 2b) Generate $y_i = \sin^3(2\pi x_i^3) + \varepsilon_i$ for $i\in 1:n$
@@ -218,6 +217,7 @@ def gendata(f, sigma, n):
     return ( f + np.random.normal(0, sigma, n) ) 
             
 f_x = f(x)
+np.random.seed(201053)
 y = gendata(f_x, sigma, n)
 
 ## Data plot
@@ -274,7 +274,7 @@ L_emp = np.zeros( (J_cv, len(h)) )    # collects the emp error over simulations
 
 #  Computation of bias
 
-r.seed(201053)      # fix seed to have bias and variance calculated on the same random set
+np.random.seed(201053)
 
 for j in range(1, J):
     y = gendata(f_x, sigma, n)
@@ -295,9 +295,8 @@ for i in range(len(h)):
 bias2 = bias**2
 Int_bias_h = np.sum(bias2, axis = 0)/n
 
-plt.plot(h, Int_bias_h, color=col_blue, lw = 3)
+np.random.seed(201053)
 
-r.seed(201053)
 for j in range(1,J):
     y = gendata(f_x, sigma, n)
     for i in range(len(h)):
@@ -310,8 +309,6 @@ for j in range(1,J):
 variance = variance/J
 
 Int_var_h = np.sum(variance, axis = 0)/n 
-
-plt.plot(h, Int_var_h, color=col_red, lw = 3)
 
 # Plot bias-variance-tradeoff
 
@@ -332,10 +329,11 @@ fig.tight_layout()
 plt.show()
 
 plt.plot(h, Int_bias_h + Int_var_h, color = col_navy, lw=3)
+plt.show()
 
 ## Cross-validation
 
-r.seed(201053)      # fix seed to have bias and variance calculated on the same random set
+np.random.seed(201053)
 
 for j in range(J_cv):
     y = gendata(f_x, sigma, n)
@@ -358,7 +356,7 @@ CV_mean = np.mean( CV_all, axis = 0 )
 
 plt.plot(h, CV_mean, lw = 3,  color = col_pink)
 
-r.seed(201053)
+np.random.seed(201053)
 
 for j in range(J_cv):
     y = gendata(f_x, sigma, n)
@@ -379,6 +377,7 @@ inner_t = (norm.pdf(0)/h)/n      # tr( S(h)/n )
 L_GCV = L_emp/( (1-inner_t)**2 )
 
 L_GCV_mean = np.mean( L_GCV, axis = 0 )
+
 
 plt.plot(h, sig2 + np.zeros( len(h) ), color=col_pink, lw=3)
 plt.plot(h, CV_mean,linestyle='dashdot', color=col_blue, lw=3)
